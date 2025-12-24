@@ -83,7 +83,10 @@ class ReviewService
     protected function generateAndSaveReplies(Review $review, string $sentiment): void
     {
         try {
-            $replies = $this->replyGeneratorService->generateAllReplies($sentiment);
+            $replies = $this->replyGeneratorService->generateAllReplies(
+                $review->review_text,
+                $sentiment
+            );
 
             foreach ($replies as $tone => $replyText) {
                 $review->replySuggestions()->create([
@@ -95,6 +98,7 @@ class ReviewService
             Log::debug('Reply suggestions generated', [
                 'review_id' => $review->id,
                 'count' => count($replies),
+                'ai_enabled' => true,
             ]);
         } catch (Exception $e) {
             Log::error('Failed to generate reply suggestions', [

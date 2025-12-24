@@ -5,7 +5,9 @@ A Laravel 10 + Vue 3 application for generating AI-powered reply suggestions for
 ## Features
 
 - ✅ Review submission with sentiment analysis
-- ✅ Automatic reply generation (friendly, professional, witty tones)
+- ✅ **AI-powered reply generation** using OpenAI (contextual, personalized replies)
+- ✅ Automatic fallback to templates if AI is unavailable
+- ✅ Multiple reply tones (friendly, professional, witty)
 - ✅ Modern Vue 3 + TailwindCSS frontend
 - ✅ RESTful API architecture
 - ✅ Ready for Google API integration
@@ -39,7 +41,8 @@ app/
 └── Services/
     ├── ReviewService.php
     ├── ReviewSentimentService.php
-    ├── ReplyGeneratorService.php
+    ├── ReplyGeneratorService.php (uses AI with fallback)
+    ├── AiReplyService.php (OpenAI integration)
     └── GoogleReviewApiService.php (future integration)
 
 resources/
@@ -112,11 +115,29 @@ DB_DATABASE=your_database
 DB_USERNAME=your_username
 DB_PASSWORD=your_password
 
+# OpenAI API (for AI-generated replies)
+OPENAI_API_KEY=your_openai_api_key
+OPENAI_API_URL=https://api.openai.com/v1/chat/completions
+OPENAI_MODEL=gpt-3.5-turbo
+
 # Google API (for future integration)
 GOOGLE_API_KEY=
 GOOGLE_API_SECRET=
 GOOGLE_PROJECT_ID=
 ```
+
+### AI Reply Generation
+
+The application uses OpenAI API to generate contextual, AI-powered replies based on review content. If the API key is not configured, the system automatically falls back to template-based replies.
+
+**To enable AI replies:**
+1. Get an OpenAI API key from https://platform.openai.com/
+2. Add `OPENAI_API_KEY` to your `.env` file
+3. The system will automatically use AI for reply generation
+
+**Fallback behavior:**
+- If AI is unavailable or fails, the system uses pre-configured templates
+- This ensures the application always generates replies
 
 ## API Endpoints
 

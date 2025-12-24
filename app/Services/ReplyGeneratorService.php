@@ -2,14 +2,29 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Log;
+
+/**
+ * Service for generating reply suggestions.
+ * 
+ * Uses AI-based generation when available, falls back to templates if AI fails.
+ */
 class ReplyGeneratorService
 {
+    protected AiReplyService $aiService;
+
+    public function __construct(AiReplyService $aiService)
+    {
+        $this->aiService = $aiService;
+    }
+
     /**
-     * Template responses organized by sentiment and tone.
+     * Fallback template responses organized by sentiment and tone.
+     * Used when AI service is unavailable or fails.
      *
      * @var array<string, array<string, string>>
      */
-    protected array $templates = [
+    protected array $fallbackTemplates = [
         'positive' => [
             'friendly' => [
                 'Thanks so much for your kind words! We truly appreciate your support 😊',
@@ -64,52 +79,72 @@ class ReplyGeneratorService
     ];
 
     /**
-     * Generate a reply based on sentiment and tone.
+     * Generate a reply based on review text, sentiment and tone using AI.
+     * Falls back to templates if AI is unavailable.
      *
+     * @param string $reviewText The review text to generate reply for
      * @param string $sentiment The sentiment: 'positive', 'neutral', or 'negative'
      * @param string $tone The tone: 'friendly', 'professional', or 'witty'
-     * @param int $index Optional index to select a specific template (0-2). If not provided, random.
      * @return string The generated reply
      * @throws \InvalidArgumentException If sentiment or tone is invalid
      */
-    public function generateReply(string $sentiment, string $tone, ?int $index = null): string
+    public function generateReply(string $reviewText, string $sentiment, string $tone): string
     {
         $this->validateSentiment($sentiment);
         $this->validateTone($tone);
 
-        $templates = $this->templates[$sentiment][$tone];
-
-        if ($index !== null) {
-            if (!isset($templates[$index])) {
-                throw new \InvalidArgumentException("Template index {$index} does not exist for sentiment '{$sentiment}' and tone '{$tone}'");
+        // Try AI generation first
+        if ($this->aiService->isAvailable()) {
+            $aiReply = $this->aiService->generateReply($reviewText, $sentiment, $tone);
+            
+            if ($aiReply !== null && !empty(trim($aiReply))) {
+                return $aiReply;
             }
-            return $templates[$index];
+            
+            Log::warning('AI reply generation failed, falling back to templates', [
+                'sentiment' => $sentiment,
+                'tone' => $tone,
+            ]);
         }
 
-        // Return random template
-        return $templates[array_rand($templates)];
+        // Fallback to templates
+        return $this->getFallbackReply($sentiment, $tone);
     }
 
     /**
-     * Generate all three replies (one for each tone) for a given sentiment.
+     * Generate all three replies (one for each tone) for a given review.
      *
+     * @param string $reviewText The review text
      * @param string $sentiment The sentiment: 'positive', 'neutral', or 'negative'
      * @return array<string, string> Array with keys 'friendly', 'professional', 'witty'
      * @throws \InvalidArgumentException If sentiment is invalid
      */
-    public function generateAllReplies(string $sentiment): array
+    public function generateAllReplies(string $reviewText, string $sentiment): array
     {
         $this->validateSentiment($sentiment);
 
         return [
-            'friendly' => $this->generateReply($sentiment, 'friendly', 0),
-            'professional' => $this->generateReply($sentiment, 'professional', 0),
-            'witty' => $this->generateReply($sentiment, 'witty', 0),
+            'friendly' => $this->generateReply($reviewText, $sentiment, 'friendly'),
+            'professional' => $this->generateReply($reviewText, $sentiment, 'professional'),
+            'witty' => $this->generateReply($reviewText, $sentiment, 'witty'),
         ];
     }
 
     /**
-     * Get all available templates for a sentiment and tone combination.
+     * Get a fallback template reply.
+     *
+     * @param string $sentiment
+     * @param string $tone
+     * @return string
+     */
+    protected function getFallbackReply(string $sentiment, string $tone): string
+    {
+        $templates = $this->fallbackTemplates[$sentiment][$tone];
+        return $templates[array_rand($templates)];
+    }
+
+    /**
+     * Get all available fallback templates for a sentiment and tone combination.
      *
      * @param string $sentiment The sentiment: 'positive', 'neutral', or 'negative'
      * @param string $tone The tone: 'friendly', 'professional', or 'witty'
@@ -121,18 +156,7 @@ class ReplyGeneratorService
         $this->validateSentiment($sentiment);
         $this->validateTone($tone);
 
-        return $this->templates[$sentiment][$tone];
-    }
-
-    /**
-     * Set custom templates (useful for configuration or testing).
-     *
-     * @param array<string, array<string, array<string>>> $templates
-     * @return void
-     */
-    public function setTemplates(array $templates): void
-    {
-        $this->templates = $templates;
+        return $this->fallbackTemplates[$sentiment][$tone];
     }
 
     /**

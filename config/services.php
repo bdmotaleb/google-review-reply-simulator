@@ -37,4 +37,10 @@ return [
         'project_id' => env('GOOGLE_PROJECT_ID'),
     ],
 
+    'openai' => [
+        'api_key' => env('OPENAI_API_KEY'),
+        'api_url' => env('OPENAI_API_URL', 'https://api.openai.com/v1/chat/completions'),
+        'model' => env('OPENAI_MODEL', 'gpt-3.5-turbo'),
+    ],
+
 ];
