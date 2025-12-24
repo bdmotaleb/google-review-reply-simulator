@@ -31,4 +31,10 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'google' => [
+        'api_key' => env('GOOGLE_API_KEY'),
+        'api_secret' => env('GOOGLE_API_SECRET'),
+        'project_id' => env('GOOGLE_PROJECT_ID'),
+    ],
+
 ];
